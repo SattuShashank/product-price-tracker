@@ -1,0 +1,488 @@
+{% extends "tracker/base.html" %}
+{% load static %}
+
+{% block title %}Alerts | Price Tracker{% endblock %}
+
+{% block content %}
+<style>
+    .alerts-page {
+        display: grid;
+        gap: 24px;
+    }
+
+    .hero-panel {
+        position: relative;
+        overflow: hidden;
+        border-radius: 28px;
+        padding: 28px;
+        background:
+            radial-gradient(circle at top right, rgba(79, 70, 229, 0.18), transparent 35%),
+            radial-gradient(circle at bottom left, rgba(201, 118, 10, 0.16), transparent 30%),
+            linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.76));
+        border: 1px solid rgba(0,0,0,0.06);
+        box-shadow: var(--shadow-lg);
+        backdrop-filter: blur(12px);
+    }
+
+    .hero-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+    .hero-title {
+        max-width: 760px;
+    }
+
+    .hero-title h2 {
+        font-family: 'Syne', sans-serif;
+        font-size: clamp(32px, 4vw, 50px);
+        line-height: 1;
+        letter-spacing: -0.05em;
+        margin: 0 0 10px;
+    }
+
+    .hero-title p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.8;
+    }
+
+    .hero-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border-radius: 999px;
+        background: rgba(201, 118, 10, 0.12);
+        color: var(--amber);
+        font-size: 13px;
+        font-weight: 700;
+        border: 1px solid rgba(201, 118, 10, 0.18);
+        white-space: nowrap;
+    }
+
+    .stats-grid {
+        margin-top: 22px;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+    }
+
+    .stat-card {
+        padding: 18px;
+        border-radius: 22px;
+        background: rgba(255,255,255,0.72);
+        border: 1px solid rgba(0,0,0,0.06);
+        box-shadow: var(--shadow-xs);
+    }
+
+    .stat-card span {
+        display: block;
+        color: var(--muted);
+        font-size: 13px;
+        margin-bottom: 8px;
+    }
+
+    .stat-card strong {
+        display: block;
+        font-family: 'Syne', sans-serif;
+        font-size: 28px;
+        letter-spacing: -0.04em;
+    }
+
+    .layout-grid {
+        display: grid;
+        grid-template-columns: 0.92fr 1.08fr;
+        gap: 24px;
+        align-items: start;
+    }
+
+    .glass-panel {
+        border-radius: 28px;
+        padding: 24px;
+        background: rgba(255,255,255,0.8);
+        border: 1px solid rgba(0,0,0,0.06);
+        box-shadow: var(--shadow-md);
+        backdrop-filter: blur(14px);
+    }
+
+    .panel-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 18px;
+    }
+
+    .panel-head h3 {
+        margin: 0;
+        font-family: 'Syne', sans-serif;
+        font-size: 22px;
+        letter-spacing: -0.03em;
+    }
+
+    .panel-head p {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    .badge-count {
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: rgba(79, 70, 229, 0.10);
+        color: var(--indigo);
+        font-size: 13px;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .alert-create-form {
+        margin-top: 18px;
+    }
+
+    .alert-create-grid {
+        display: grid;
+        gap: 14px;
+    }
+
+    .alert-create-grid label {
+        display: grid;
+        gap: 8px;
+        font-weight: 600;
+        color: #1f2937;
+    }
+
+    .alert-create-grid input,
+    .alert-create-grid select {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 14px 16px;
+        font: inherit;
+        background: rgba(255,255,255,0.92);
+        box-shadow: var(--shadow-xs);
+    }
+
+    .alert-create-grid input:focus,
+    .alert-create-grid select:focus {
+        outline: none;
+        border-color: var(--amber);
+        box-shadow: 0 0 0 4px rgba(201, 118, 10, 0.12);
+    }
+
+    .checkbox-row {
+        display: flex !important;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 16px;
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        background: rgba(255,255,255,0.92);
+        box-shadow: var(--shadow-xs);
+    }
+
+    .checkbox-row input {
+        width: 18px;
+        height: 18px;
+        margin: 0;
+        accent-color: var(--amber);
+    }
+
+    .primary-btn {
+        margin-top: 16px;
+        border: none;
+        border-radius: 16px;
+        padding: 14px 18px;
+        background: linear-gradient(135deg, #0f172a, #1f2937);
+        color: #fff;
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: 0 14px 28px rgba(15, 23, 42, 0.18);
+        transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease;
+    }
+
+    .primary-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 18px 32px rgba(15, 23, 42, 0.22);
+    }
+
+    .history-list {
+        display: grid;
+        gap: 14px;
+    }
+
+    .history-item {
+        position: relative;
+        overflow: hidden;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 16px;
+        padding: 18px;
+        border-radius: 22px;
+        background: rgba(255,255,255,0.9);
+        border: 1px solid rgba(0,0,0,0.06);
+        box-shadow: var(--shadow-xs);
+    }
+
+    .history-item.featured {
+        border-color: rgba(201, 118, 10, 0.28);
+        background:
+            linear-gradient(135deg, rgba(201,118,10,0.08), rgba(255,255,255,0.94));
+    }
+
+    .history-item strong {
+        display: block;
+        font-size: 18px;
+        margin-bottom: 6px;
+    }
+
+    .history-item p {
+        margin: 0 0 8px;
+        color: var(--muted);
+        line-height: 1.6;
+        font-size: 14px;
+    }
+
+    .alert-actions {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 10px;
+        align-items: flex-end;
+        min-width: 110px;
+    }
+
+    .text-button {
+        border: none;
+        background: none;
+        color: var(--indigo);
+        font-weight: 700;
+        text-decoration: none;
+        cursor: pointer;
+        padding: 0;
+    }
+
+    .text-button--danger {
+        color: #dc2626;
+    }
+
+    .alert-state {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 12px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        width: fit-content;
+        margin-top: 4px;
+    }
+
+    .alert-state.waiting {
+        background: rgba(234, 179, 8, 0.12);
+        color: #a16207;
+    }
+
+    .alert-state.triggered {
+        background: rgba(34, 197, 94, 0.12);
+        color: #15803d;
+    }
+
+    .alert-state.inactive {
+        background: rgba(148, 163, 184, 0.15);
+        color: #475569;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 36px 18px;
+        border-radius: 22px;
+        background: rgba(255,255,255,0.85);
+        border: 1px dashed rgba(0,0,0,0.12);
+    }
+
+    .empty-state h4 {
+        margin: 0 0 8px;
+        font-size: 20px;
+    }
+
+    .empty-state p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.8;
+    }
+
+    .login-note {
+        margin-top: 14px;
+        padding: 14px 16px;
+        border-radius: 16px;
+        background: rgba(79, 70, 229, 0.08);
+        color: #3730a3;
+        border: 1px solid rgba(79, 70, 229, 0.14);
+    }
+
+    @media (max-width: 980px) {
+        .layout-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .history-item {
+            grid-template-columns: 1fr;
+        }
+
+        .alert-actions {
+            flex-direction: row;
+            justify-content: flex-start;
+            align-items: center;
+            min-width: 0;
+        }
+    }
+</style>
+
+<section class="alerts-page">
+    <section class="hero-panel">
+        <div class="hero-top">
+            <div class="hero-title">
+                <h2>Price alerts</h2>
+                <p>Create alerts for products and get a clear view of which ones are waiting, triggered, or inactive. Everything is grouped in a cleaner dashboard so you can scan it quickly.</p>
+            </div>
+            <div class="hero-chip">Live alert dashboard</div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span>Total alerts</span>
+                <strong>{{ alerts|length }}</strong>
+            </div>
+            <div class="stat-card">
+                <span>Active alerts</span>
+                <strong>{{ alerts|dictsort:"is_active"|length }}</strong>
+            </div>
+            <div class="stat-card">
+                <span>Products available</span>
+                <strong>{{ products|length }}</strong>
+            </div>
+        </div>
+    </section>
+
+    <div class="layout-grid">
+        <section class="glass-panel">
+            <div class="panel-head">
+                <div>
+                    <h3>Create a new alert</h3>
+                    <p>Choose a product and set the price where you want to be notified.</p>
+                </div>
+            </div>
+
+            {% if user.is_authenticated %}
+                <form method="post" action="{% url 'create_alert' %}" class="alert-create-form">
+                    {% csrf_token %}
+                    <div class="alert-create-grid">
+                        <label>
+                            Product
+                            <select name="product" required>
+                                {% for product in products %}
+                                    <option value="{{ product.pk }}">
+                                        {{ product.name }}{% if product.category %} · {{ product.category }}{% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </label>
+
+                        <label>
+                            Target price
+                            <input type="number" name="target_price" step="0.01" min="1" placeholder="Enter target price" required>
+                        </label>
+
+                        <label class="checkbox-row checkbox-row--inline">
+                            <input type="checkbox" name="is_active" checked>
+                            Active
+                        </label>
+                    </div>
+
+                    <button type="submit" class="primary-btn">Save alert</button>
+                </form>
+            {% else %}
+                <div class="login-note">
+                    Login to create and manage alerts.
+                </div>
+            {% endif %}
+        </section>
+
+        <section class="glass-panel">
+            <div class="panel-head">
+                <div>
+                    <h3>All alerts</h3>
+                    <p>See every alert you created, along with the current price and status.</p>
+                </div>
+                <span class="badge-count">{{ alerts|length }} total</span>
+            </div>
+
+            {% if alerts %}
+                <div class="history-list">
+                    {% for alert in alerts %}
+                        <div class="history-item {% if alert.triggered %}featured{% endif %}">
+                            <div>
+                                <strong>{{ alert.product.name }}</strong>
+                                <p>
+                                    Target: ₹{{ alert.target_price|floatformat:2 }}
+                                    {% if alert.product.category %} · {{ alert.product.category }}{% endif %}
+                                </p>
+                                <p>
+                                    Current:
+                                    {% if alert.current_price %}
+                                        ₹{{ alert.current_price|floatformat:2 }}
+                                    {% else %}
+                                        No price yet
+                                    {% endif %}
+                                </p>
+
+                                {% if alert.triggered %}
+                                    <div class="alert-state triggered">Triggered</div>
+                                {% else %}
+                                    <div class="alert-state waiting">Waiting</div>
+                                {% endif %}
+
+                                {% if alert.is_active %}
+                                    <div class="alert-state inactive" style="margin-top:8px;">Active</div>
+                                {% else %}
+                                    <div class="alert-state inactive" style="margin-top:8px;">Inactive</div>
+                                {% endif %}
+
+                                {% if alert.last_triggered_at %}
+                                    <p style="margin-top:10px;">
+                                        Last triggered {{ alert.last_triggered_at|date:"d M Y, H:i" }}
+                                    </p>
+                                {% endif %}
+                            </div>
+
+                            <div class="alert-actions">
+                                <a href="{% url 'product_detail' alert.product.pk %}" class="text-button">Open product</a>
+                                <form method="post" action="{% url 'delete_alert' alert.pk %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="text-button text-button--danger">Delete</button>
+                                </form>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <h4>No alerts yet</h4>
+                    <p>Create your first alert from the form on the left. Once a product drops below your target, it will show up here as triggered.</p>
+                </div>
+            {% endif %}
+        </section>
+    </div>
+</section>
+{% endblock %}

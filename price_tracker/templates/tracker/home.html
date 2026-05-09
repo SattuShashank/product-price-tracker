@@ -1,0 +1,111 @@
+{% extends "tracker/base.html" %}
+{% load static %}
+{% block title %}PriceTracker — Buy at the right time{% endblock %}
+
+{% block content %}
+
+<section class="hero">
+    <div class="hero-grid"></div>
+    <div class="hero-glow"></div>
+    <div class="hero-content">
+        <!-- <p class="hero-eyebrow"></p> -->
+        <h1>Buy smart.<br><em>Never overpay.</em></h1>
+        <p>LSTM-powered predictions track price movements across thousands of products in real time.</p>
+        <form class="search-form" method="get" action="">
+            <input type="text" name="q" value="{{ request.GET.q|default:'' }}"
+                   placeholder="Search products, brands, categories…" autocomplete="off">
+            <button type="submit">Search →</button>
+        </form>
+    </div>
+</section>
+
+<div class="stats-row">
+    <div class="stat-card">
+        <span>Total products</span>
+        <strong>{{ page_obj.paginator.count }}</strong>
+    </div>
+    <div class="stat-card">
+        <span>Showing</span>
+        <strong>{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong>
+    </div>
+    <div class="stat-card">
+        <span>Best deal drop</span>
+        <strong>{% if best_deal_product %}₹{{ best_deal_product.price_drop_amount|floatformat:0 }}{% else %}—{% endif %}</strong>
+    </div>
+</div>
+
+{% if products %}
+<p class="section-label">All products</p>
+<div class="grid">
+    {% for product in products %}
+    <article class="card {% if product.is_best_deal %}featured{% endif %}">
+
+        <div class="card-media">
+            {% if product.local_image %}
+                <img src="{{ product.local_image.url }}" alt="{{ product.name }}" loading="lazy">
+            {% elif product.image_url %}
+                <img src="{{ product.image_url }}" alt="{{ product.name }}" loading="lazy">
+            {% else %}
+                <div class="image-placeholder">NO IMAGE</div>
+            {% endif %}
+            {% if product.is_best_deal %}<span class="badge">★ Best deal</span>{% endif %}
+        </div>
+
+        <div class="card-body">
+            <div>
+                <p class="card-title-text">{{ product.name|truncatechars:70 }}</p>
+                <p class="meta">{{ product.brand|default:"—" }} · {{ product.category|default:"General" }}</p>
+            </div>
+
+            <div class="price-box">
+                <p class="price-label">Current price</p>
+                {% if product.latest_price %}
+                    <p class="price-value">₹{{ product.latest_price|floatformat:2 }}</p>
+                    {% if product.price_drop_amount %}
+                        <p class="drop-text">↓ dropped ₹{{ product.price_drop_amount|floatformat:2 }}</p>
+                    {% endif %}
+                {% else %}
+                    <p class="price-value no-data">No data yet</p>
+                {% endif %}
+            </div>
+
+            {% if product.predicted_price %}
+            <div class="ai-row">
+                <div>
+                    <p class="ai-pred-label">Price prediction</p>
+                    <p class="ai-pred-value">₹{{ product.predicted_price|floatformat:2 }}</p>
+                </div>
+                {% if product.decision %}
+                <span class="decision-badge {% if 'BUY' in product.decision %}buy{% elif 'WAIT' in product.decision %}wait{% else %}hold{% endif %}">
+                    {% if 'BUY' in product.decision %}BUY{% elif 'WAIT' in product.decision %}WAIT{% else %}HOLD{% endif %}
+                </span>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <a href="{% url 'product_detail' product.pk %}" class="primary-btn">View details →</a>
+        </div>
+    </article>
+    {% endfor %}
+</div>
+
+<div class="pagination">
+    {% if page_obj.has_previous %}
+        <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}page=1">«</a>
+        <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}page={{ page_obj.previous_page_number }}">‹</a>
+    {% endif %}
+    <span class="current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+        <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}page={{ page_obj.next_page_number }}">›</a>
+        <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}page={{ page_obj.paginator.num_pages }}">»</a>
+    {% endif %}
+</div>
+
+{% else %}
+<div class="empty-state">
+    <h3>No products found</h3>
+    <p>Try a different search term or import data.</p>
+</div>
+{% endif %}
+
+{% endblock %}

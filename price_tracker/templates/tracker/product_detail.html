@@ -1,0 +1,216 @@
+{% extends "tracker/base.html" %}
+{% load static %}
+{% block title %}{{ product.name|truncatechars:50 }} | PriceTracker{% endblock %}
+
+{% block content %}
+<div class="detail-layout">
+
+    <!-- ── Main column ── -->
+    <div style="display:grid;gap:20px;">
+        <div class="panel">
+            <div class="panel-inner">
+                <div class="detail-head">
+                    <div class="detail-image-wrap">
+                        {% if product.local_image %}
+                            <img src="{{ product.local_image.url }}" alt="{{ product.name }}">
+                        {% elif product.image_url and product.image_url|slice:":4" == "http" %}
+                            <img src="{{ product.image_url }}" alt="{{ product.name }}">
+                        {% else %}
+                            <div class="image-placeholder">NO IMAGE</div>
+                        {% endif %}
+                    </div>
+                    <div class="detail-title">
+                        <h1>{{ product.name }}</h1>
+                        <p class="meta">{{ product.brand|default:"Brand not listed" }} · {{ product.category|default:"General" }}</p>
+                    </div>
+                </div>
+
+                <div class="stats-container">
+                    <div class="stat-card">
+                        <h4>Lowest</h4>
+                        <p>{% if min_price %}₹{{ min_price|floatformat:0 }}{% else %}—{% endif %}</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Highest</h4>
+                        <p>{% if max_price %}₹{{ max_price|floatformat:0 }}{% else %}—{% endif %}</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Average</h4>
+                        <p>{% if avg_price %}₹{{ avg_price|floatformat:0 }}{% else %}—{% endif %}</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Change</h4>
+                        <p>{% if price_change_percent %}{% if price_change_percent < 0 %}↓{% else %}↑{% endif %}{{ price_change_percent|floatformat:1 }}%{% else %}—{% endif %}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div style="padding:0 28px 28px;">
+                <div class="chart-card">
+                    <div class="card-title">
+                        <h3>Price history</h3>
+                        <span>{{ labels|length }} data points</span>
+                    </div>
+                    <canvas id="priceChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Sidebar ── -->
+    <aside class="side-stack">
+
+        <div class="info-card">
+            <h4>Intelligence report</h4>
+            <div class="summary-row">
+                {% if current_price %}
+                <div class="summary-item">
+                    <span>Current price</span>
+                    <strong>₹{{ current_price|floatformat:2 }}</strong>
+                </div>
+                {% endif %}
+                <div class="summary-item">
+                    <span>Trend</span>
+                    <span class="tag {{ price_direction|default:'stable' }}">
+                        {% if price_direction == "down" %}↓ Falling
+                        {% elif price_direction == "up" %}↑ Rising
+                        {% else %}→ Stable{% endif %}
+                    </span>
+                </div>
+                {% if predicted_price %}
+                <div class="summary-item">
+                    <span>AI next price</span>
+                    <strong>₹{{ predicted_price }}</strong>
+                </div>
+                <div class="summary-item">
+                    <span>Signal</span>
+                    <span class="tag {% if 'BUY' in decision %}down{% elif 'WAIT' in decision %}up{% else %}stable{% endif %}">
+                        {{ decision }}
+                    </span>
+                </div>
+                {% else %}
+                <div class="summary-item">
+                    <span>AI signal</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);">INSUFFICIENT DATA</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="info-card">
+    <h4>Set price alert</h4>
+
+    {% if user.is_authenticated %}
+        <form method="post" action="{% url 'create_alert' %}">
+            {% csrf_token %}
+            <input type="hidden" name="product" value="{{ product.pk }}">
+
+            <label>Alert threshold (₹)</label>
+            <input type="number" name="target_price" placeholder="Target price" step="0.01" required>
+
+            <button type="submit">Create alert →</button>
+        </form>
+    {% else %}
+        <div class="login-box">
+            <p style="margin-bottom: 14px;">Login to create a price alert for this product.</p>
+            <a href="{% url 'login' %}?next={{ request.get_full_path|urlencode }}" class="auth-btn" style="display:inline-block;text-decoration:none;text-align:center;">
+                Go to login
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+        {% if product.alerts.all %}
+        <div class="info-card">
+    <h4>Set price alert</h4>
+
+    {% if user.is_authenticated %}
+        <form method="post" action="{% url 'create_alert' %}">
+            {% csrf_token %}
+            <input type="hidden" name="product" value="{{ product.pk }}">
+
+            <label>Alert threshold (₹)</label>
+            <input type="number" name="target_price" placeholder="Target price" step="0.01" required>
+
+            <button type="submit">Create alert →</button>
+        </form>
+    {% else %}
+        <div class="login-box">
+            <p style="margin-bottom: 14px;">Login to create a price alert for this product.</p>
+            <a href="{% url 'login' %}?next={{ request.get_full_path|urlencode }}" class="auth-btn" style="display:inline-block;text-decoration:none;text-align:center;">
+                Go to login
+            </a>
+        </div>
+    {% endif %}
+</div>
+        {% endif %}
+
+    </aside>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{{ labels|json_script:"labels-data" }}
+{{ prices|json_script:"prices-data" }}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const labels = JSON.parse(document.getElementById("labels-data").textContent);
+    const prices = JSON.parse(document.getElementById("prices-data").textContent);
+    const canvas = document.getElementById("priceChart");
+    if (!canvas || !labels.length) return;
+
+    new Chart(canvas, {
+        type: "line",
+        data: {
+            labels,
+            datasets: [{
+                label: "Price (₹)",
+                data: prices,
+                borderColor: "#c9760a",
+                backgroundColor: "rgba(201,118,10,0.07)",
+                borderWidth: 2,
+                tension: 0.4,
+                pointRadius: 0,
+                pointHoverRadius: 5,
+                pointHoverBackgroundColor: "#c9760a",
+                fill: true,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            interaction: { mode: "index", intersect: false },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: "#0c0c0f",
+                    titleColor: "#8a8680",
+                    bodyColor: "#f59e0b",
+                    padding: 14,
+                    titleFont: { family: "'IBM Plex Mono'" },
+                    bodyFont: { family: "'IBM Plex Mono'", size: 14, weight: "600" },
+                    callbacks: {
+                        label: ctx => "₹" + ctx.parsed.y.toLocaleString("en-IN", { minimumFractionDigits: 2 })
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { color: "#8a8680", maxTicksLimit: 8, font: { family: "'IBM Plex Mono'", size: 11 } },
+                    grid: { color: "#f0ede6" }, border: { display: false }
+                },
+                y: {
+                    ticks: {
+                        color: "#8a8680", font: { family: "'IBM Plex Mono'", size: 11 },
+                        callback: v => "₹" + v.toLocaleString("en-IN")
+                    },
+                    grid: { color: "#f0ede6" }, border: { display: false }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

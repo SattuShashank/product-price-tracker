@@ -1,0 +1,278 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | PriceTracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'tracker/css/app.css' %}">
+    <style>
+        body.login-page {
+            min-height: 100vh;
+            background:
+                radial-gradient(circle at top left, rgba(201,118,10,.24), transparent 30%),
+                radial-gradient(circle at bottom right, rgba(79,70,229,.22), transparent 28%),
+                linear-gradient(180deg, #f4f2ed 0%, #efece5 100%);
+            display: grid;
+            place-items: center;
+            padding: 24px;
+        }
+
+        .auth-shell {
+            width: min(1100px, 100%);
+            display: grid;
+            grid-template-columns: 1.1fr .9fr;
+            gap: 28px;
+            align-items: stretch;
+        }
+
+        .auth-brand-panel,
+        .auth-card {
+            border-radius: 28px;
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+        }
+
+        .auth-brand-panel {
+            position: relative;
+            padding: 42px;
+            color: #fff;
+            background: linear-gradient(135deg, #0c0c0f 0%, #1a1a24 50%, #312e81 100%);
+            min-height: 540px;
+        }
+
+        .auth-brand-panel:before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
+            background-size: 36px 36px;
+            opacity: .4;
+            pointer-events: none;
+        }
+
+        .auth-brand-inner {
+            position: relative;
+            z-index: 1;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 28px;
+        }
+
+        .auth-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'IBM Plex Mono', monospace;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            font-size: 11px;
+            color: #fcd34d;
+        }
+
+        .auth-badge:before {
+            content: "";
+            width: 22px;
+            height: 1px;
+            background: #fcd34d;
+        }
+
+        .auth-brand-panel h1 {
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(40px, 5vw, 64px);
+            line-height: .95;
+            letter-spacing: -0.05em;
+            margin: 14px 0 18px;
+        }
+
+        .auth-brand-panel p {
+            max-width: 520px;
+            color: rgba(255,255,255,.76);
+            font-size: 16px;
+            line-height: 1.8;
+        }
+
+        .auth-metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+        }
+
+        .metric {
+            background: rgba(255,255,255,.06);
+            border: 1px solid rgba(255,255,255,.08);
+            border-radius: 18px;
+            padding: 18px;
+            backdrop-filter: blur(10px);
+        }
+
+        .metric strong {
+            display: block;
+            font-size: 22px;
+            margin-bottom: 4px;
+        }
+
+        .metric span {
+            color: rgba(255,255,255,.7);
+            font-size: 13px;
+        }
+
+        .auth-card {
+            background: rgba(255,255,255,.78);
+            backdrop-filter: blur(16px);
+            padding: 34px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .auth-card h2 {
+            font-family: 'Syne', sans-serif;
+            font-size: 32px;
+            letter-spacing: -0.04em;
+            margin-bottom: 10px;
+        }
+
+        .auth-card .subtitle {
+            color: var(--muted);
+            margin-bottom: 24px;
+        }
+
+        .auth-form p {
+            margin-bottom: 18px;
+        }
+
+        .auth-form label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .auth-form input {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 14px 16px;
+            font: inherit;
+            background: #fff;
+            box-shadow: var(--shadow-xs);
+        }
+
+        .auth-form input:focus {
+            outline: none;
+            border-color: var(--amber);
+            box-shadow: 0 0 0 4px rgba(201,118,10,.12);
+        }
+
+        .auth-actions {
+            display: grid;
+            gap: 12px;
+            margin-top: 6px;
+        }
+
+        .auth-btn {
+            border: none;
+            border-radius: 14px;
+            padding: 14px 18px;
+            background: linear-gradient(135deg, #c9760a, #f59e0b);
+            color: #fff;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 10px 24px rgba(201,118,10,.28);
+        }
+
+        .auth-link {
+            display: block;
+            text-align: center;
+            margin-top: 14px;
+            color: var(--indigo);
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .errorlist {
+            margin: 8px 0 0 18px;
+            color: #b91c1c;
+        }
+
+        .login-error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+            border-radius: 14px;
+            padding: 12px 14px;
+            margin-bottom: 18px;
+            font-size: 14px;
+        }
+
+        @media (max-width: 900px) {
+            .auth-shell {
+                grid-template-columns: 1fr;
+            }
+
+            .auth-brand-panel {
+                min-height: auto;
+            }
+        }
+    </style>
+</head>
+<body class="login-page">
+    <div class="auth-shell">
+        <section class="auth-brand-panel">
+            <div class="auth-brand-inner">
+                <div>
+                    <div class="auth-badge">PriceTracker</div>
+                    <h1>Track prices.<br>Buy at the right time.</h1>
+                    <p>Sign in to view your price alerts, monitor product history, and use AI-powered buying signals in one place.</p>
+                </div>
+                <div class="auth-metrics">
+                    <div class="metric"><strong>AI</strong><span>Forecasts</span></div>
+                    <div class="metric"><strong>Live</strong><span>Price alerts</span></div>
+                    <div class="metric"><strong>Fast</strong><span>Search & compare</span></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="auth-card">
+            <h2>Welcome back</h2>
+            <p class="subtitle">Login to continue.</p>
+
+            <form method="post" action="{% url 'login' %}" class="auth-form">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ next }}">
+
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="login-error">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+
+                <p>
+                    <label for="id_username">Email Address</label>
+                    {{ form.username }}
+                    {{ form.username.errors }}
+                </p>
+
+                <p>
+                    <label for="id_password">Password</label>
+                    {{ form.password }}
+                    {{ form.password.errors }}
+                </p>
+
+                <div class="auth-actions">
+                    <button type="submit" class="auth-btn">Sign in</button>
+                </div>
+            </form>
+
+            <a href="{% url 'register' %}" class="auth-link">Create a new account</a>
+        </section>
+    </div>
+</body>
+</html>
