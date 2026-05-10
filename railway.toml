@@ -1,6 +1,5 @@
 [build]
 builder = "nixpacks"
-buildCommand = "pip install -r price_tracker/requirements.txt && playwright install --with-deps chromium && cd price_tracker && python manage.py collectstatic --no-input"
 
 [deploy]
 startCommand = "cd price_tracker && python manage.py migrate && gunicorn price_tracker.wsgi:application --bind 0.0.0.0:$PORT --workers 2"
